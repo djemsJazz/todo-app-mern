@@ -19,6 +19,8 @@ app.use(cors({
 }));
 
 app.use(morgan('dev'));
+app.use(express.json());
+
 app.get('/test', (req, res, next) => {
   try {
     res.status(401);
