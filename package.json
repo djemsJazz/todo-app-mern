@@ -13,5 +13,6 @@
   "description": "",
   "devDependencies": {
     "concurrently": "^9.2.0"
-  }
+  },
+  "dependencies": {}
 }
