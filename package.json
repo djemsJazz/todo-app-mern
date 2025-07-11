@@ -1,0 +1,17 @@
+{
+  "name": "todo-app-mern",
+  "version": "1.0.0",
+  "scripts": {
+    "install:client": "yarn --cwd frontend install",
+    "install:server": "yarn --cwd backend install",
+    "client": "yarn --cwd frontend run dev",
+    "server": "yarn --cwd backend run dev",
+    "dev": "concurrently 'yarn server' 'yarn client'"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "concurrently": "^9.2.0"
+  }
+}
