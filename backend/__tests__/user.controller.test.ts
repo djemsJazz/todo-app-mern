@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response, NextFunction } from 'express';
-import { create as createUser, getAll } from '../src/controlers/user.controler';
+import { checkUserExistanceByMail, create as createUser, getAll, updateUserEmail } from '../src/controlers/user.controler';
 import bcrypt from 'bcrypt';
 import User from '../src/models/user.model';
 
@@ -19,6 +20,44 @@ const userPayload = {
   phoneNumber: 'Test phoneNumber',
 };
 
+describe('User Middleware - checkUserExistanceByMail', () => {
+  beforeEach(() => { // Cette will execute before each test respresented by it
+    req = {
+      body: {},
+    };
+    res = {
+      status: jest.fn().mockReturnThis(), // Using mockReturnThis here because in the controller we are using chaining so we should return the res before call send()
+      send: jest.fn(),
+    };
+
+    next = jest.fn();
+  });
+  it('Should return a 400 error if the email is not in the request body', async () => {
+    await checkUserExistanceByMail(req as Request, res as Response, next as NextFunction);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(next).toHaveBeenCalledWith(new Error('Email is not in the request'));
+  });
+  it('Should return a 409 error if the user has been found by email', async () => {
+    jest.spyOn(User, 'findOne').mockResolvedValue({ _id: 'ExistsUserId' });
+    req.body.email = 'testmail@mail.com';
+    await checkUserExistanceByMail(req as Request, res as Response, next as NextFunction);
+
+    expect(User.findOne).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(next).toHaveBeenCalledWith(new Error('User already Exists'));
+  });
+
+  it('Should call next() if the user was not found by email', async () => {
+    jest.spyOn(User, 'findOne').mockResolvedValue(null);
+    req.body.email = 'testmail@mail.com';
+    await checkUserExistanceByMail(req as Request, res as Response, next as NextFunction);
+
+    expect(User.findOne).toHaveBeenCalled();
+    expect(next).toHaveBeenCalled();
+  });
+});
+
 describe('User controller - create', () => {
   beforeEach(() => { // Cette will execute before each test respresented by it
     req = {
@@ -33,21 +72,13 @@ describe('User controller - create', () => {
     next = jest.fn();
   });
 
-  it('Should retrun 409 if user already exists', async () => {
-    (User.findOne as jest.Mock).mockResolvedValue({ _id: 'Exists' });
-
-    await createUser(req as Request, res as Response, next as NextFunction);
-    expect(res.status).toHaveBeenCalledWith(409);
-    expect(next).toHaveBeenCalledWith(new Error('User already Exists'));
-  });
 
   it('Should create new user and resturn 201 with new user payload', async () => {
-    (User.findOne as jest.Mock).mockResolvedValue(null);
-    (bcrypt.hash as jest.Mock).mockResolvedValue('HashedPassword');
+    jest.spyOn(User, 'findOne').mockResolvedValue(null);
+    jest.spyOn(bcrypt, 'hash').mockResolvedValue('HashedPassword' as never);
 
     const savedUser = { _id: 'newUserId', ...req.body, password: 'HashedPassword' };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (User as any).mockImplementation(() => ({
       save: jest.fn().mockResolvedValue(savedUser)
     }));
@@ -60,7 +91,9 @@ describe('User controller - create', () => {
 
   it('should call next with error on unexpected failure', async () => {
     const error = new Error('DB down');
-    (User.findOne as jest.Mock).mockRejectedValue(error);
+    (User as any).mockImplementation(() => ({
+      save: jest.fn().mockRejectedValue(error)
+    }));
 
     await createUser(req as Request, res as Response, next as NextFunction);
 
@@ -75,7 +108,7 @@ describe('User controller - getAll', () => {
       { _id: '2', ...userPayload },
     ];
 
-    (User.find as jest.Mock).mockResolvedValue(mockUsers);
+    jest.spyOn(User ,'find').mockResolvedValue(mockUsers);
 
     await getAll(req as Request, res as Response, next as NextFunction);
 
@@ -86,10 +119,42 @@ describe('User controller - getAll', () => {
 
   it('should call next with error if User.find throws', async () => {
     const error = new Error('Database error');
-    (User.find as jest.Mock).mockRejectedValue(error);
+    jest.spyOn(User, 'find').mockRejectedValue(error);
 
     await getAll(req as Request, res as Response, next as NextFunction);
 
+    expect(next).toHaveBeenCalledWith(error);
+  });
+});
+
+describe('User controller - updateUserEmail', () => {
+  beforeEach(() => {
+    req = {
+      body: { email: 'newemail@mail.com' },
+      params: { id: 'userId' },
+    };
+    res = {
+      status: jest.fn().mockReturnThis(),
+      send: jest.fn()
+    };
+    next = jest.fn();
+  });
+
+  it('Should update the user and return 200 status with the updated user', async () => {
+    const updatedUser = { _id: 'userId', email: 'newemail@mail.com' };
+    jest.spyOn(User ,'findByIdAndUpdate').mockResolvedValue(updatedUser);
+
+    await updateUserEmail(req as Request, res as Response, next as NextFunction);
+
+    expect(User.findByIdAndUpdate).toHaveBeenCalledWith('userId', { email: 'newemail@mail.com' }, { new: true });
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.send).toHaveBeenCalledWith(updatedUser);
+  });
+
+  it('Should cann next with error on exception', async () => {
+    const error = new Error('DB Error');
+    jest.spyOn(User ,'findByIdAndUpdate').mockRejectedValue(error);
+    await updateUserEmail(req as Request, res as Response, next as NextFunction);
     expect(next).toHaveBeenCalledWith(error);
   });
 });
