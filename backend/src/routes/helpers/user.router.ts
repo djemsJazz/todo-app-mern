@@ -1,9 +1,9 @@
 import express from 'express';
-import { create } from '../../controlers/user.controler';
+import { checkUserExistanceByMail, create } from '../../controlers/user.controler';
 import { userCreateValidator } from '../../validators/user.validator';
 
 const userRouter = express.Router();
 
-userRouter.post('/', userCreateValidator, create);
+userRouter.post('/', userCreateValidator, checkUserExistanceByMail, create);
 
 export default userRouter;
