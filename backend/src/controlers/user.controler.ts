@@ -20,3 +20,12 @@ export const create = async (req: Request, res: Response, next: NextFunction) =>
     return next(error);
   }
 };
+
+export const getAll = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const users = await User.find();
+    return res.status(200).send(users);
+  } catch (error) {
+    return next(error);
+  }
+};

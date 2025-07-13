@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { create as createUser } from '../src/controlers/user.controler';
+import { create as createUser, getAll } from '../src/controlers/user.controler';
 import bcrypt from 'bcrypt';
 import User from '../src/models/user.model';
 
@@ -7,20 +7,22 @@ import User from '../src/models/user.model';
 jest.mock('../src/models/user.model');
 jest.mock('bcrypt');
 
-describe('User controller - create', () => {
-  let req: Partial<Request>;
-  let res: Partial<Response>;
-  let next: Partial<NextFunction>;
+let req: Partial<Request>;
+let res: Partial<Response>;
+let next: Partial<NextFunction>;
 
+const userPayload = {
+  firstName: 'Test firstName',
+  lastName: 'Test lastName',
+  email: 'testmail@mail.com',
+  password: 'TestPassword',
+  phoneNumber: 'Test phoneNumber',
+};
+
+describe('User controller - create', () => {
   beforeEach(() => { // Cette will execute before each test respresented by it
     req = {
-      body: {
-        firstName: 'Test firstName',
-        lastName: 'Test lastName',
-        email: 'testmail@mail.com',
-        password: 'TestPassword',
-        phoneNumber: 'Test phoneNumber',
-      }
+      body: userPayload
     };
 
     res = {
@@ -53,7 +55,7 @@ describe('User controller - create', () => {
     await createUser(req as Request, res as Response, next as NextFunction);
 
     expect(bcrypt.hash).toHaveBeenCalledWith('TestPassword', 10);
-     
+
   });
 
   it('should call next with error on unexpected failure', async () => {
@@ -61,6 +63,32 @@ describe('User controller - create', () => {
     (User.findOne as jest.Mock).mockRejectedValue(error);
 
     await createUser(req as Request, res as Response, next as NextFunction);
+
+    expect(next).toHaveBeenCalledWith(error);
+  });
+});
+
+describe('User controller - getAll', () => {
+  it('should return all users with status 200', async () => {
+    const mockUsers = [
+      { _id: '1', ...userPayload },
+      { _id: '2', ...userPayload },
+    ];
+
+    (User.find as jest.Mock).mockResolvedValue(mockUsers);
+
+    await getAll(req as Request, res as Response, next as NextFunction);
+
+    expect(User.find).toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(res.send).toHaveBeenCalledWith(mockUsers);
+  });
+
+  it('should call next with error if User.find throws', async () => {
+    const error = new Error('Database error');
+    (User.find as jest.Mock).mockRejectedValue(error);
+
+    await getAll(req as Request, res as Response, next as NextFunction);
 
     expect(next).toHaveBeenCalledWith(error);
   });
