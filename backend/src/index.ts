@@ -6,6 +6,7 @@ import cors from 'cors';
 import morgan from 'morgan';
 
 import errorMiddleware from './middleware/error-middleware';
+import apiRouter from './routes';
 
 const app: Express = express();
 
@@ -29,6 +30,8 @@ app.get('/test', (req, res, next) => {
     return next(error);
   }
 });
+
+app.use('/api', apiRouter);
 
 app.use((req, res) => {
   console.log('object');
