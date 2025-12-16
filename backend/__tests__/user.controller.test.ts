@@ -1,12 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response, NextFunction } from 'express';
 import { checkUserExistanceByMail, create as createUser, getAll, updateUserEmail } from '../src/controlers/user.controler';
+
+
 import bcrypt from 'bcrypt';
-import User from '../src/models/user.model';
-
-
-jest.mock('../src/models/user.model');
 jest.mock('bcrypt');
+
+import User from '../src/models/user.model';
+jest.mock('../src/models/user.model');
+
+// Ici nous avons mock jest et bcrypte parce qu'on ne veut pas les tester, on veut juste les utiliser pour nos tests
+// Le mock de jest va intercepté l'import da chaque module et le remplacer par la version mocked
+// Nous avons besoin de l'import, afin qu'on puisse controller et observer le mock
 
 let req: Partial<Request>;
 let res: Partial<Response>;
@@ -21,7 +26,7 @@ const userPayload = {
 };
 
 describe('User Middleware - checkUserExistanceByMail', () => {
-  beforeEach(() => { // Cette will execute before each test respresented by it
+  beforeEach(() => { // will execute before each test respresented by it
     req = {
       body: {},
     };
@@ -32,7 +37,7 @@ describe('User Middleware - checkUserExistanceByMail', () => {
 
     next = jest.fn();
   });
-  it('Should return a 400 error if the email is not in the request body', async () => {
+  it('Should return a 400 error if the email is nothing in the request body', async () => {
     await checkUserExistanceByMail(req as Request, res as Response, next as NextFunction);
 
     expect(res.status).toHaveBeenCalledWith(400);
@@ -85,8 +90,9 @@ describe('User controller - create', () => {
 
     await createUser(req as Request, res as Response, next as NextFunction);
 
-    expect(bcrypt.hash).toHaveBeenCalledWith('TestPassword', 10);
-
+    expect(User.findOne).toHaveBeenCalled();
+    expect(bcrypt.hash).toHaveBeenCalledWith(userPayload.password, 10);
+    expect(res.status).toHaveBeenCalledWith(201);
   });
 
   it('should call next with error on unexpected failure', async () => {
@@ -108,7 +114,7 @@ describe('User controller - getAll', () => {
       { _id: '2', ...userPayload },
     ];
 
-    jest.spyOn(User ,'find').mockResolvedValue(mockUsers);
+    jest.spyOn(User, 'find').mockResolvedValue(mockUsers);
 
     await getAll(req as Request, res as Response, next as NextFunction);
 
@@ -142,7 +148,7 @@ describe('User controller - updateUserEmail', () => {
 
   it('Should update the user and return 200 status with the updated user', async () => {
     const updatedUser = { _id: 'userId', email: 'newemail@mail.com' };
-    jest.spyOn(User ,'findByIdAndUpdate').mockResolvedValue(updatedUser);
+    jest.spyOn(User, 'findByIdAndUpdate').mockResolvedValue(updatedUser);
 
     await updateUserEmail(req as Request, res as Response, next as NextFunction);
 
@@ -153,7 +159,7 @@ describe('User controller - updateUserEmail', () => {
 
   it('Should cann next with error on exception', async () => {
     const error = new Error('DB Error');
-    jest.spyOn(User ,'findByIdAndUpdate').mockRejectedValue(error);
+    jest.spyOn(User, 'findByIdAndUpdate').mockRejectedValue(error);
     await updateUserEmail(req as Request, res as Response, next as NextFunction);
     expect(next).toHaveBeenCalledWith(error);
   });
