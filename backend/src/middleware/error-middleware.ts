@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { NextFunction, Request, Response } from 'express';
-import Joi, { ValidationError, Err } from 'joi';
+import { ValidationError } from 'joi';
 
 type JoiError = {
   error: ValidationError
@@ -8,10 +8,9 @@ type JoiError = {
 
 const errorMiddleware = (err: Error | JoiError, req: Request, res: Response, next: NextFunction) => {
   const joiError = (err as JoiError).error;
-  const { isJoi } = joiError;
+  const { isJoi } = joiError || {};
   let status = res.statusCode || 500;
-
-  if (joiError.isJoi) { status = 400; }
+  if (joiError?.isJoi) { status = 400; }
 
   const message = isJoi ? joiError.toString() : (err as Error).message;
   const stack = (err as Error).stack;
