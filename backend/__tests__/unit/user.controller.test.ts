@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Request, Response, NextFunction } from 'express';
-import { checkUserExistanceByMail, create as createUser, getAll, updateUserEmail } from '../src/controlers/user.controler';
+import { checkUserExistanceByMail, create as createUser, getAll, updateUserEmail } from '../../src/controlers/user.controler';
 
 
 import bcrypt from 'bcrypt';
 jest.mock('bcrypt');
 
-import User from '../src/models/user.model';
-jest.mock('../src/models/user.model');
+import User from '../../src/models/user.model';
+jest.mock('../../src/models/user.model');
 
 // Ici nous avons mock jest et bcrypte parce qu'on ne veut pas les tester, on veut juste les utiliser pour nos tests
 // Le mock de jest va intercepté l'import da chaque module et le remplacer par la version mocked
