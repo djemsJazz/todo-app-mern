@@ -1,19 +1,30 @@
-import { createDefaultPreset } from 'ts-jest';
 
-const tsJestTransformCfg = createDefaultPreset().transform;
 
 /** @type {import("jest").Config} **/
 export default {
-  testEnvironment: "node",
-  transform: {
-    ...tsJestTransformCfg,
-  },
-  globals: {
-    'ts-jest': {
-      tsconfig: 'tsconfig.test.json',
+  projects: [
+    {
+      displayName: 'unit',
+      testMatch: ['<rootDir>/__tests__/unit/**/*.test.ts'],
+      preset: 'ts-jest',
+      testEnvironment: 'node',
+      globals: {
+        'ts-jest': {
+          tsconfig: 'tsconfig.test.json',
+        },
+      },
     },
-  },
-
-  // Chemin vers les tests
-  testMatch: ['**/__tests__/**/*.test.ts'],
+    {
+      displayName: 'integration',
+      testMatch: ['<rootDir>/__tests__/integration/**/*.test.ts'],
+      preset: 'ts-jest',
+      testEnvironment: 'node',
+      globals: {
+        'ts-jest': {
+          tsconfig: 'tsconfig.test.json',
+        },
+      },
+      setupFilesAfterEnv: ['<rootDir>/__tests__/integration/setup.ts'],
+    }
+  ]
 };
